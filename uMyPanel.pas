@@ -4,10 +4,10 @@ interface
 
 uses
   System.SysUtils, System.Classes,
-  Vcl.Controls, Vcl.ExtCtrls, WinApi.Messages;
+  Vcl.Controls, Vcl.ExtCtrls, WinApi.Messages, Vcl.StdCtrls, Winapi.Windows;
 
 const
-  Key = '123456789';
+  Key = '#LicenseKey';
 
 type
 
@@ -32,14 +32,61 @@ procedure Register;
 
 implementation
 
+function HDDVolumeSeri(Surucu:char):  string;
+var
+  NotUsed           :  dWord;
+  VolumeFlags       :  dWord;
+  VolumeInfo        :  array[0..MAX_PATH] of char;
+  VolumeSerialNumber:  dWord;
+begin
+  GetVolumeInformation(PChar(Surucu + ':\'),
+                       VolumeInfo, SizeOf(VolumeInfo),
+                       @VolumeSerialNumber, NotUsed,
+                       VolumeFlags, nil, 0);
+  Result := Format('%x', [VolumeSerialNumber]);
+end;
+
+Function ASCIIbirUstHex( HDDVol:String ):String;
+Var
+  Sayac : Integer;
+begin
+  Result := '';
+  For Sayac := 1 to Length(HddVol) do begin
+    Result := Result + Format('%d', [ Ord(HddVol[Sayac])+1 ]);
+  end;
+end;
+
+Function SifiraTamamlayan( Anahtar: String ):String;
+Var
+  Sayac : Integer;
+begin
+  Result := '';
+  For Sayac := 1 to Length(Anahtar) do begin
+    Result := Result + Format('%d', [ 9 - StrToInt(Anahtar[Sayac]) ]);
+  end;
+end;
+
+Function ProgramCalissin( Anahtar, Verilen:String):Boolean;
+begin
+   Result := Verilen = SifiraTamamlayan( Anahtar );
+end;
+
 procedure Register;
 Var
   s, VKey : string;
+  HDDVolume : string;
+  ASCIIHex : string;
+  ASCIIHexZero: string;
 begin
 
-   VKey := '123456789';
+   HDDVolume := HDDVolumeSeri   ('C');
+   ASCIIHex := ASCIIbirUstHex  ( HDDVolume );
+   ASCIIHexZero := SifiraTamamlayan( ASCIIHex );
+
+
    try
-      if Key = '123456789' then
+      if ProgramCalissin( Key, ASCIIHexZero ) then
+//      if Key = '123456789' then
       begin
          RegisterComponents('Samples', [TMyPanel]);
       end;
@@ -47,7 +94,7 @@ begin
     on E: Exception do
     begin
       S := E.Message;
-      raise Exception.Create('Hata: Lisans Süresi Sona Ermiþ!');
+      raise Exception.Create('Hata: Lisans SÃ¼resi Sona ErmiÅŸ!');
     end;
 
    end;
